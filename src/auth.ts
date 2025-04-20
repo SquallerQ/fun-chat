@@ -6,6 +6,10 @@ import {
   console,
 } from './browserTypes';
 
+import { setWS } from './wsManager';
+
+import { renderMainPage } from './main';
+
 export function renderAuthPage(): void {
   if (checkAuth()) return;
 
@@ -131,6 +135,7 @@ export function renderAuthPage(): void {
     serverError.textContent = '';
 
     const ws = new WebSocket('ws://localhost:4000');
+    setWS(ws);
 
     ws.onopen = (): void => {
       const request = {
@@ -153,8 +158,8 @@ export function renderAuthPage(): void {
         if (data.payload && data.payload.user && data.payload.user.isLogined) {
           sessionStorage.setItem('token', crypto.randomUUID());
           sessionStorage.setItem('login', loginInput.value);
-          ws.close();
-          // renderMainPage();
+          sessionStorage.setItem('password', passwordInput.value);
+          renderMainPage();
         } else {
           serverError.textContent = 'Authentication failed: user not logged in';
           loginBtn.disabled = false;
@@ -174,13 +179,6 @@ export function renderAuthPage(): void {
       loginBtn.disabled = false;
       loginBtn.textContent = 'Login';
     };
-
-    ws.onclose = (): void => {
-      if (!serverError.textContent) {
-        loginBtn.disabled = false;
-        loginBtn.textContent = 'Login';
-      }
-    };
   }
 
   form.addEventListener('submit', (e) => {
@@ -199,7 +197,7 @@ function checkAuth(): boolean {
   const token = sessionStorage.getItem('token');
 
   if (token) {
-    // renderMainPage();
+    renderMainPage();
     return true;
   }
   return false;
