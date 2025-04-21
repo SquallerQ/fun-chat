@@ -14,6 +14,8 @@ import { getWS } from '../wsManager';
 import { renderAboutPage } from './about';
 import { renderAuthPage } from './auth';
 
+import { initializeChat } from './chat';
+
 interface User {
   login: string;
   online: boolean;
@@ -280,12 +282,14 @@ export function renderMainPage(): void {
   function renderUserList(usersToShow: User[], searchQuery: string): void {
     userList.innerHTML = '';
     const query = searchQuery.toLowerCase();
+    const currentLogin = sessionStorage.getItem('login') || '';
 
     for (const user of usersToShow) {
-      if (query) {
-        if (!user.login.toLowerCase().includes(query)) {
-          continue;
-        }
+      if (user.login === currentLogin) {
+        continue;
+      }
+      if (query && !user.login.toLowerCase().includes(query)) {
+        continue;
       }
 
       const li = document.createElement('li');
@@ -296,6 +300,14 @@ export function renderMainPage(): void {
         messageInput.disabled = false;
         sendButton.disabled = false;
         messageList.innerHTML = '';
+        initializeChat(
+          ws,
+          users,
+          selectedUser,
+          messageList,
+          messageInput,
+          sendButton,
+        );
       });
 
       const name = document.createElement('span');

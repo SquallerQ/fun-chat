@@ -4,3 +4,6 @@ export const WebSocket = globalThis.WebSocket;
 export const console = globalThis.console;
 export const crypto = globalThis.crypto;
 export const setInterval = globalThis.setInterval;
+export const HTMLElement = globalThis.HTMLElement;
+export const HTMLInputElement = globalThis.HTMLInputElement;
+export const HTMLButtonElement = globalThis.HTMLButtonElement;
