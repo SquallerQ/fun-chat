@@ -1,5 +1,6 @@
 import {
   document,
+  window,
   sessionStorage,
   crypto,
   setInterval,
@@ -21,12 +22,24 @@ interface User {
   online: boolean;
 }
 
-export function renderMainPage(): void {
-  if (!checkAuth()) {
-    renderAuthPage();
-    return;
-  }
+export function renderApp(): void {
+  const currentPath = window.location.pathname;
 
+  if (currentPath === '/login') {
+    renderAuthPage();
+  } else if (currentPath === '/about') {
+    renderAboutPage(checkAuth() ? 'main' : 'auth');
+  } else {
+    if (checkAuth()) {
+      renderMainPage();
+    } else {
+      window.history.pushState({}, '', '/login');
+      renderAuthPage();
+    }
+  }
+}
+
+export function renderMainPage(): void {
   const body = document.body;
   body.innerHTML = '';
 
@@ -54,7 +67,8 @@ export function renderMainPage(): void {
   infoBtn.textContent = 'Info';
   infoBtn.className = 'info-btn-main';
   infoBtn.addEventListener('click', () => {
-    renderAboutPage('main');
+    window.history.pushState({}, '', '/about');
+    renderApp();
   });
   header.appendChild(infoBtn);
 
@@ -276,7 +290,8 @@ export function renderMainPage(): void {
     sessionStorage.removeItem('login');
     sessionStorage.removeItem('password');
     ws.close();
-    renderAuthPage();
+    window.history.pushState({}, '', '/login');
+    renderApp();
   });
 
   function renderUserList(usersToShow: User[], searchQuery: string): void {
@@ -344,7 +359,7 @@ export function renderMainPage(): void {
   });
 }
 
-function checkAuth(): boolean {
+export function checkAuth(): boolean {
   const token = sessionStorage.getItem('token');
   if (token) {
     return true;
@@ -352,3 +367,11 @@ function checkAuth(): boolean {
     return false;
   }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderApp();
+
+  window.addEventListener('popstate', () => {
+    renderApp();
+  });
+});

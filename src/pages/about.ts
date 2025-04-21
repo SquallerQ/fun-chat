@@ -1,6 +1,6 @@
-import { document } from '../browserTypes';
-import { renderAuthPage } from './auth';
-import { renderMainPage } from './main';
+import { document, window } from '../browserTypes';
+import { renderApp } from './main';
+import { checkAuth } from './main';
 
 export function renderAboutPage(fromPage: 'auth' | 'main'): void {
   const body = document.body;
@@ -29,11 +29,9 @@ export function renderAboutPage(fromPage: 'auth' | 'main'): void {
   backButton.textContent = 'Go back';
   backButton.className = 'back-button';
   backButton.addEventListener('click', () => {
-    if (fromPage === 'auth') {
-      renderAuthPage();
-    } else {
-      renderMainPage();
-    }
+    const targetPath = fromPage === 'auth' || !checkAuth() ? '/login' : '/main';
+    window.history.pushState({}, '', targetPath);
+    renderApp();
   });
   aboutContainer.appendChild(backButton);
 
