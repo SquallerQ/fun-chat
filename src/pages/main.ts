@@ -4,12 +4,14 @@ import {
   crypto,
   setInterval,
   console,
-} from './browserTypes';
+} from '../browserTypes';
 
-import githubIcon from './assets/github.svg';
-import rsSchoolLogo from './assets/rss-logo.svg';
+import githubIcon from '../assets/github.svg';
+import rsSchoolLogo from '../assets/rss-logo.svg';
 
-import { getWS } from './wsManager';
+import { getWS } from '../wsManager';
+
+import { renderAboutPage } from './about';
 import { renderAuthPage } from './auth';
 
 interface User {
@@ -43,8 +45,16 @@ export function renderMainPage(): void {
   } else {
     userName.textContent = 'Welcome, User!';
   }
-  userName.className = 'user-name';
+  userName.className = 'header-user-name';
   header.appendChild(userName);
+
+  const infoBtn = document.createElement('button');
+  infoBtn.textContent = 'Info';
+  infoBtn.className = 'info-btn-main';
+  infoBtn.addEventListener('click', () => {
+    renderAboutPage('main');
+  });
+  header.appendChild(infoBtn);
 
   const logoutBtn = document.createElement('button');
   logoutBtn.textContent = 'Logout';
@@ -53,6 +63,9 @@ export function renderMainPage(): void {
   header.appendChild(logoutBtn);
 
   mainPage.appendChild(header);
+
+  const content = document.createElement('div');
+  content.className = 'content';
 
   const userListContainer = document.createElement('div');
   userListContainer.className = 'user-list-container';
@@ -67,7 +80,40 @@ export function renderMainPage(): void {
   userList.className = 'user-list';
   userListContainer.appendChild(userList);
 
-  mainPage.appendChild(userListContainer);
+  content.appendChild(userListContainer);
+
+  const dialogContainer = document.createElement('div');
+  dialogContainer.className = 'dialog-container';
+
+  const dialogHeader = document.createElement('div');
+  dialogHeader.className = 'dialog-header';
+  dialogHeader.textContent = 'Select a user to start chatting';
+  dialogContainer.appendChild(dialogHeader);
+
+  const messageList = document.createElement('div');
+  messageList.className = 'message-list';
+  dialogContainer.appendChild(messageList);
+
+  const messageInputContainer = document.createElement('div');
+  messageInputContainer.className = 'message-input-container';
+
+  const messageInput = document.createElement('input');
+  messageInput.type = 'text';
+  messageInput.placeholder = 'Type a message...';
+  messageInput.className = 'message-input';
+  messageInput.disabled = true;
+  messageInputContainer.appendChild(messageInput);
+
+  const sendButton = document.createElement('button');
+  sendButton.textContent = 'Send';
+  sendButton.className = 'send-button';
+  sendButton.disabled = true;
+  messageInputContainer.appendChild(sendButton);
+
+  dialogContainer.appendChild(messageInputContainer);
+  content.appendChild(dialogContainer);
+
+  mainPage.appendChild(content);
 
   const footer = document.createElement('footer');
   footer.className = 'footer';
@@ -119,6 +165,7 @@ export function renderMainPage(): void {
   body.appendChild(mainPage);
 
   let users: User[] = [];
+  let selectedUser: User | null = null;
 
   const ws = getWS();
 
@@ -243,6 +290,13 @@ export function renderMainPage(): void {
 
       const li = document.createElement('li');
       li.className = 'user-item';
+      li.addEventListener('click', () => {
+        selectedUser = user;
+        updateDialogHeader();
+        messageInput.disabled = false;
+        sendButton.disabled = false;
+        messageList.innerHTML = '';
+      });
 
       const name = document.createElement('span');
       name.textContent = user.login;
@@ -260,6 +314,16 @@ export function renderMainPage(): void {
       li.appendChild(status);
 
       userList.appendChild(li);
+    }
+  }
+
+  function updateDialogHeader(): void {
+    if (selectedUser) {
+      dialogHeader.textContent = `${selectedUser.login} (${selectedUser.online ? 'Online' : 'Offline'})`;
+    } else {
+      dialogHeader.textContent = 'Select a user to start chatting';
+      messageInput.disabled = true;
+      sendButton.disabled = true;
     }
   }
 

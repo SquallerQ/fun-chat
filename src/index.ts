@@ -1,3 +1,3 @@
-import { renderAuthPage } from './auth';
+import { renderAuthPage } from './pages/auth';
 
 renderAuthPage();

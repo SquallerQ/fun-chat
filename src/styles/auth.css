@@ -1,5 +1,13 @@
 .auth-page {
-  width: 400px;
+  display: flex;
+  align-items: center;
+  min-height: 100vh;
+  text-align: center;
+  background-color: #f5f5f5;
+}
+
+.auth-container {
+  min-width: 400px;
   margin: 50px auto;
   padding: 20px;
 
@@ -62,6 +70,7 @@
 #login-btn {
   width: 100%;
   padding: 10px;
+  margin-bottom: 15px;
 
   font-size: 16px;
   border: none;
@@ -79,4 +88,25 @@
 
 #login-btn:hover:not(:disabled) {
   background-color: #0056b3;
+}
+
+.info-btn-auth {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: #215923;
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+.info-btn-auth:hover {
+  background-color: #033305;
+}
+
+@media (max-width: 450px) {
+  .auth-container {
+    min-width: auto;
+  }
 }

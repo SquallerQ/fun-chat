@@ -1,8 +1,12 @@
 .main-page {
-  max-width: 1200px;
-  margin: 50px auto;
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 
+  max-width: 90%;
+  margin: 0px auto;
+
+  border: 1px solid #d6ecff;
   background-color: #d6ecff;
 }
 
@@ -22,16 +26,25 @@
   font-size: 24px;
 }
 
-.user-name {
+.header-user-name {
   font-size: 16px;
   font-weight: bold;
   color: #007bff;
 }
+.info-btn-main {
+  padding: 8px 16px;
+  background-color: #8d8788;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
 
+  transition: all 0.3s ease;
+}
 .logout-btn {
   padding: 8px 16px;
   background-color: #dc3545;
-  color: white;
+  color: #fff;
   border: none;
   border-radius: 4px;
   font-size: 14px;
@@ -44,8 +57,17 @@
   cursor: pointer;
 }
 
+.content {
+  display: flex;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
 .user-list-container {
-  margin: 20px 0;
+  width: 300px;
+  border-right: 1px solid #ccc;
+  padding: 10px;
+  overflow-y: auto;
 }
 
 .search-input {
@@ -60,6 +82,7 @@
 .user-list {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .user-item {
@@ -67,10 +90,21 @@
   justify-content: space-between;
   padding: 10px;
   border-bottom: 1px solid #eee;
+  cursor: pointer;
+
+  transition: all 0.3s ease; 
+}
+
+.user-item:hover {
+  background-color: #f0f0f0;
 }
 
 .user-item:last-child {
   border-bottom: none;
+}
+
+.user-name {
+  flex-grow: 1;
 }
 
 .user-status.online {
@@ -80,6 +114,43 @@
 
 .user-status.offline {
   color: gray;
+}
+
+.dialog-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.dialog-header {
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ccc;
+  font-weight: bold;
+}
+
+.message-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.message-input-container {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #ccc;
+}
+
+.message-input {
+  flex-grow: 1;
+  padding: 5px;
+  margin-right: 10px;
+}
+
+.send-button {
+  padding: 5px 10px;
+  cursor: pointer;
 }
 
 .footer {
@@ -112,4 +183,45 @@
 
 .school-name, .author-name, .year {
   font-size: 17px;
+}
+
+@media (max-width: 768px) {
+  .main-page {
+    max-width: 100%;
+    background-color: #fafafa;
+  }
+  .content {
+    flex-direction: column;
+  }
+  .user-list-container {
+    width: 100%;
+    display: block;
+    background-color: #e4fffe;
+  }
+  .dialog-container {
+    background-color: #ffe6e6;
+  }
+  .dialog-header{
+    background-color: #fff;
+  }
+  .header {
+    flex-wrap: wrap;
+  }
+  .header h1 {
+    font-size: 20px;
+    flex-basis: 100%;
+    margin-bottom: 10px;
+  }
+  .header-user-name {
+    flex-basis: 100%;
+    margin-bottom: 10px;
+  }
+}
+@media (max-width: 420px) {
+  .footer {
+    flex-wrap: wrap;
+  }
+  .school-container {
+    flex-basis: 100%;
+  }
 }

@@ -4,10 +4,11 @@ import {
   WebSocket,
   crypto,
   console,
-} from './browserTypes';
+} from '../browserTypes';
 
-import { setWS } from './wsManager';
+import { setWS } from '../wsManager';
 
+import { renderAboutPage } from './about';
 import { renderMainPage } from './main';
 
 export function renderAuthPage(): void {
@@ -19,9 +20,12 @@ export function renderAuthPage(): void {
   const authPage = document.createElement('div');
   authPage.className = 'auth-page';
 
+  const authContainer = document.createElement('div');
+  authContainer.className = 'auth-container';
+
   const title = document.createElement('h1');
   title.textContent = 'Login to Fun Chat';
-  authPage.appendChild(title);
+  authContainer.appendChild(title);
 
   const form = document.createElement('form');
   form.id = 'auth-form';
@@ -80,7 +84,17 @@ export function renderAuthPage(): void {
   loginBtn.disabled = true;
   form.appendChild(loginBtn);
 
-  authPage.appendChild(form);
+  authContainer.appendChild(form);
+
+  const infoBtn = document.createElement('button');
+  infoBtn.textContent = 'Info';
+  infoBtn.className = 'info-btn-auth';
+  infoBtn.addEventListener('click', () => {
+    renderAboutPage('auth');
+  });
+  authContainer.appendChild(infoBtn);
+  authPage.appendChild(authContainer);
+
   body.appendChild(authPage);
 
   function validateLogin(value: string): string {
