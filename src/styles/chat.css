@@ -35,10 +35,39 @@
 
 .message-text {
   display: block;
-  padding: 8px 0;
+  padding: 11px 0;
   font-size: 20px;
 }
 
 .message-status {
   font-size: 12px;
+}
+
+.edited-status {
+  margin-right: 5px;
+  font-size: 12px;
+  color: #212518;
+}
+
+.delete-btn {
+  margin-right: 5px;
+  padding: 3px 8px;
+  background-color: #1c0709;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+
+  transition: all 0.3s ease;
+}
+.edit-btn {
+  margin-right: 5px;
+  padding: 3px 8px;
+  background-color: #a3a7a3;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+
+  transition: all 0.3s ease;
 }

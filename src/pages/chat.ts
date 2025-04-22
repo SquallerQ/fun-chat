@@ -24,6 +24,7 @@ interface Message {
     isDelivered: boolean;
     isReaded: boolean;
     isEdited: boolean;
+    isDeleted: boolean;
   };
 }
 
@@ -48,15 +49,32 @@ export function initializeChat(
     ws.send(JSON.stringify(historyRequest));
   }
 
+  let editingMessageId: string | null = null;
   function sendMessage(text: string, to: string): void {
-    const messageRequest = {
-      id: crypto.randomUUID(),
-      type: 'MSG_SEND',
-      payload: {
-        message: { to, text },
-      },
-    };
-    ws.send(JSON.stringify(messageRequest));
+    if (editingMessageId) {
+      const editRequest = {
+        id: crypto.randomUUID(),
+        type: 'MSG_EDIT',
+        payload: {
+          message: {
+            id: editingMessageId,
+            text,
+          },
+        },
+      };
+      ws.send(JSON.stringify(editRequest));
+      editingMessageId = null;
+    } else {
+      const messageRequest = {
+        id: crypto.randomUUID(),
+        type: 'MSG_SEND',
+        payload: {
+          message: { to, text },
+        },
+      };
+      ws.send(JSON.stringify(messageRequest));
+    }
+
     messageInput.value = '';
   }
 
@@ -90,11 +108,44 @@ export function initializeChat(
       messageDiv.appendChild(timeSpan);
 
       const textSpan = document.createElement('span');
-      textSpan.textContent = msg.text;
+
+      textSpan.textContent = msg.status?.isDeleted
+        ? 'Message deleted'
+        : msg.text;
       textSpan.className = 'message-text';
       messageDiv.appendChild(textSpan);
+      if (msg.status?.isEdited && !msg.status?.isDeleted) {
+        const editedSpan = document.createElement('span');
+        editedSpan.className = 'edited-status';
+        editedSpan.textContent = ' (Edited)';
+        messageDiv.appendChild(editedSpan);
+      }
+      if (msg.from === currentLogin && !msg.status?.isDeleted) {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', () => {
+          const deleteRequest = {
+            id: crypto.randomUUID(),
+            type: 'MSG_DELETE',
+            payload: {
+              message: { id: msg.id },
+            },
+          };
+          ws.send(JSON.stringify(deleteRequest));
+        });
+        messageDiv.appendChild(deleteBtn);
 
-      if (msg.from === currentLogin) {
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () => {
+          messageInput.value = msg.text;
+          messageInput.focus();
+          editingMessageId = msg.id;
+        });
+        messageDiv.appendChild(editBtn);
+
         const statusSpan = document.createElement('span');
         statusSpan.className = 'message-status';
         statusSpan.textContent = msg.status.isDelivered ? '✓✓' : '✓';
@@ -123,6 +174,25 @@ export function initializeChat(
     } else if (data.type === 'MSG_FROM_USER') {
       messages = data.payload?.messages || [];
       renderMessages();
+    } else if (data.type === 'MSG_DELETE') {
+      const deletedMsg = data.payload?.message;
+      if (deletedMsg?.id) {
+        const index = messages.findIndex((m) => m.id === deletedMsg.id);
+        if (index !== -1) {
+          messages[index].status.isDeleted = true;
+          renderMessages();
+        }
+      }
+    } else if (data.type === 'MSG_EDIT') {
+      const editedMsg = data.payload?.message;
+      if (editedMsg?.id) {
+        const index = messages.findIndex((m) => m.id === editedMsg.id);
+        if (index !== -1) {
+          messages[index].text = editedMsg.text;
+          messages[index].status.isEdited = true;
+          renderMessages();
+        }
+      }
     } else if (data.type === 'ERROR') {
       console.log('Chat error:', data.payload?.error);
     }
