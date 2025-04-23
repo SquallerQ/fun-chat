@@ -1,5 +1,6 @@
 import {
   document,
+  window,
   sessionStorage,
   WebSocket,
   crypto,
@@ -7,12 +8,15 @@ import {
 } from '../browserTypes';
 
 import { setWS } from '../wsManager';
-
 import { renderAboutPage } from './about';
-import { renderMainPage } from './main';
+import { renderApp } from './main';
 
 export function renderAuthPage(): void {
-  if (checkAuth()) return;
+  if (checkAuth()) {
+    window.history.pushState({}, '', '/main');
+    renderApp();
+    return;
+  }
 
   const body = document.body;
   body.innerHTML = '';
@@ -90,6 +94,7 @@ export function renderAuthPage(): void {
   infoBtn.textContent = 'Info';
   infoBtn.className = 'info-btn-auth';
   infoBtn.addEventListener('click', () => {
+    window.history.pushState({}, '', '/about');
     renderAboutPage('auth');
   });
   authContainer.appendChild(infoBtn);
@@ -162,6 +167,8 @@ export function renderAuthPage(): void {
           },
         },
       };
+      sessionStorage.setItem('login', loginInput.value);
+      sessionStorage.setItem('password', passwordInput.value);
       ws.send(JSON.stringify(request));
     };
 
@@ -173,7 +180,8 @@ export function renderAuthPage(): void {
           sessionStorage.setItem('token', crypto.randomUUID());
           sessionStorage.setItem('login', loginInput.value);
           sessionStorage.setItem('password', passwordInput.value);
-          renderMainPage();
+          window.history.pushState({}, '', '/main');
+          renderApp();
         } else {
           serverError.textContent = 'Authentication failed: user not logged in';
           loginBtn.disabled = false;
@@ -208,11 +216,8 @@ export function renderAuthPage(): void {
 }
 
 function checkAuth(): boolean {
-  const token = sessionStorage.getItem('token');
+  const login = sessionStorage.getItem('login');
+  const password = sessionStorage.getItem('password');
 
-  if (token) {
-    renderMainPage();
-    return true;
-  }
-  return false;
+  return !!login && !!password;
 }

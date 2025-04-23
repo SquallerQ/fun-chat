@@ -4,6 +4,7 @@ import {
   sessionStorage,
   crypto,
   setInterval,
+  setTimeout,
   console,
 } from '../browserTypes';
 
@@ -186,19 +187,44 @@ export function renderMainPage(): void {
   const ws = getWS();
 
   ws.onopen = (): void => {
-    const activeRequest = {
-      id: crypto.randomUUID(),
-      type: 'USER_ACTIVE',
-      payload: null,
-    };
-    ws.send(JSON.stringify(activeRequest));
+    const login = sessionStorage.getItem('login');
+    const password = sessionStorage.getItem('password');
 
-    const inactiveRequest = {
-      id: crypto.randomUUID(),
-      type: 'USER_INACTIVE',
-      payload: null,
-    };
-    ws.send(JSON.stringify(inactiveRequest));
+    if (login && password) {
+      const loginRequest = {
+        id: crypto.randomUUID(),
+        type: 'USER_LOGIN',
+        payload: {
+          user: { login, password },
+        },
+      };
+      ws.send(JSON.stringify(loginRequest));
+    }
+
+    setTimeout(() => {
+      initializeChat(
+        ws,
+        users,
+        selectedUser,
+        messageList,
+        messageInput,
+        sendButton,
+      );
+
+      const activeRequest = {
+        id: crypto.randomUUID(),
+        type: 'USER_ACTIVE',
+        payload: { user: { login } },
+      };
+      ws.send(JSON.stringify(activeRequest));
+
+      const inactiveRequest = {
+        id: crypto.randomUUID(),
+        type: 'USER_INACTIVE',
+        payload: null,
+      };
+      ws.send(JSON.stringify(inactiveRequest));
+    }, 200);
   };
 
   ws.onmessage = (event): void => {

@@ -71,3 +71,13 @@
 
   transition: all 0.3s ease;
 }
+
+.unread-divider {
+  text-align: center;
+  margin: 10px 0;
+  font-size: 12px;
+  color: #666;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  padding-top: 5px;
+}

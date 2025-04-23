@@ -38,7 +38,10 @@ export function initializeChat(
 ): void {
   let messages: Message[] = [];
 
+  let showUnreadDivider = true;
+
   function loadMessageHistory(login: string): void {
+    showUnreadDivider = true;
     const historyRequest = {
       id: crypto.randomUUID(),
       type: 'MSG_FROM_USER',
@@ -90,9 +93,24 @@ export function initializeChat(
       return;
     }
 
+    let dividerInserted = false;
+
     messages.forEach((msg) => {
       const messageDiv = document.createElement('div');
       messageDiv.className = `message ${msg.from === currentLogin ? 'sent' : 'received'}`;
+
+      if (
+        showUnreadDivider &&
+        !dividerInserted &&
+        msg.from === selectedUser?.login &&
+        !msg.status.isReaded
+      ) {
+        const divider = document.createElement('div');
+        divider.className = 'unread-divider';
+        divider.textContent = 'Unread messages';
+        messageList.appendChild(divider);
+        dividerInserted = true;
+      }
 
       const timeSpan = document.createElement('span');
       timeSpan.className = 'message-time';
@@ -156,6 +174,16 @@ export function initializeChat(
     });
     messageList.scrollTop = messageList.scrollHeight;
   }
+
+  function removeUnreadDivider(): void {
+    if (!showUnreadDivider) return;
+    showUnreadDivider = false;
+    renderMessages();
+  }
+
+  messageList.addEventListener('scroll', removeUnreadDivider);
+  messageList.addEventListener('click', removeUnreadDivider);
+  sendButton.addEventListener('click', removeUnreadDivider);
 
   ws.addEventListener('message', (event) => {
     const data = JSON.parse(event.data);
