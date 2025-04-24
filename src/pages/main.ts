@@ -184,6 +184,9 @@ export function renderMainPage(): void {
   let users: User[] = [];
   let selectedUser: User | null = null;
 
+  let unreadMap: Record<string, number> = {};
+  const currentLogin = sessionStorage.getItem('login') || '';
+
   const ws = getWS();
 
   ws.onopen = (): void => {
@@ -209,6 +212,8 @@ export function renderMainPage(): void {
         messageList,
         messageInput,
         sendButton,
+        currentLogin,
+        '',
       );
 
       const activeRequest = {
@@ -269,8 +274,32 @@ export function renderMainPage(): void {
         }
       });
       renderUserList(users, searchInput.value);
-    } else {
-      console.log('Incorrect response:', data);
+    } else if (data.type === 'MSG_SEND') {
+      const msg = data.payload?.message;
+      if (
+        msg &&
+        msg.to === currentLogin &&
+        !msg.status.isReaded &&
+        !msg.status.isDeleted &&
+        msg.from !== selectedUser?.login
+      ) {
+        unreadMap[msg.from] = (unreadMap[msg.from] || 0) + 1;
+        renderUserList(users, searchInput.value);
+      }
+    } else if (data.type === 'MSG_READ') {
+      const readMsg = data.payload?.message;
+      if (
+        readMsg?.id &&
+        readMsg.from !== currentLogin &&
+        !readMsg.status.isDeleted &&
+        unreadMap[readMsg.from] > 0
+      ) {
+        unreadMap[readMsg.from]--;
+        if (unreadMap[readMsg.from] <= 0) {
+          delete unreadMap[readMsg.from];
+        }
+        renderUserList(users, searchInput.value);
+      }
     }
   };
 
@@ -292,7 +321,7 @@ export function renderMainPage(): void {
       payload: null,
     };
     ws.send(JSON.stringify(inactiveRequest));
-  }, 2000);
+  }, 1000);
 
   logoutBtn.addEventListener('click', () => {
     const login = sessionStorage.getItem('login');
@@ -335,8 +364,11 @@ export function renderMainPage(): void {
 
       const li = document.createElement('li');
       li.className = 'user-item';
+      li.setAttribute('data-login', user.login);
       li.addEventListener('click', () => {
         selectedUser = user;
+        unreadMap[user.login] = 0;
+        delete unreadMap[user.login];
         updateDialogHeader();
         messageInput.disabled = false;
         sendButton.disabled = false;
@@ -348,6 +380,8 @@ export function renderMainPage(): void {
           messageList,
           messageInput,
           sendButton,
+          currentLogin,
+          selectedUser.login,
         );
       });
 
@@ -355,6 +389,13 @@ export function renderMainPage(): void {
       name.textContent = user.login;
       name.className = 'user-name';
       li.appendChild(name);
+
+      const badge = document.createElement('span');
+      badge.className = 'unread-indicator';
+      const unreadCount = unreadMap[user.login] || 0;
+      badge.textContent = unreadCount > 0 ? String(unreadCount) : '';
+      badge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+      li.appendChild(badge);
 
       const status = document.createElement('span');
       if (user.online) {

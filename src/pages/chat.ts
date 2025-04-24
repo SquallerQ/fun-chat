@@ -1,9 +1,8 @@
 import {
   document,
   crypto,
-  console,
   WebSocket,
-  sessionStorage,
+  KeyboardEvent,
   HTMLElement,
   HTMLInputElement,
   HTMLButtonElement,
@@ -27,6 +26,11 @@ interface Message {
     isDeleted: boolean;
   };
 }
+const eventListeners: {
+  sendButton?: () => void;
+  // eslint-disable-next-line no-unused-vars
+  messageInput?: (e: KeyboardEvent) => void;
+} = {};
 
 export function initializeChat(
   ws: WebSocket,
@@ -35,10 +39,13 @@ export function initializeChat(
   messageList: HTMLElement,
   messageInput: HTMLInputElement,
   sendButton: HTMLButtonElement,
+  from: string,
+  to: string,
 ): void {
+  const targetUser = to;
   let messages: Message[] = [];
-
   let showUnreadDivider = true;
+  let editingMessageId: string | null = null;
 
   function loadMessageHistory(login: string): void {
     showUnreadDivider = true;
@@ -52,8 +59,10 @@ export function initializeChat(
     ws.send(JSON.stringify(historyRequest));
   }
 
-  let editingMessageId: string | null = null;
   function sendMessage(text: string, to: string): void {
+    const trimmedText = text.trim();
+    if (!trimmedText || !to) return;
+
     if (editingMessageId) {
       const editRequest = {
         id: crypto.randomUUID(),
@@ -61,7 +70,7 @@ export function initializeChat(
         payload: {
           message: {
             id: editingMessageId,
-            text,
+            text: trimmedText,
           },
         },
       };
@@ -72,7 +81,7 @@ export function initializeChat(
         id: crypto.randomUUID(),
         type: 'MSG_SEND',
         payload: {
-          message: { to, text },
+          message: { to, text: trimmedText },
         },
       };
       ws.send(JSON.stringify(messageRequest));
@@ -83,9 +92,16 @@ export function initializeChat(
 
   function renderMessages(): void {
     messageList.innerHTML = '';
-    const currentLogin = sessionStorage.getItem('login') || '';
 
-    if (messages.length === 0) {
+    const filteredMessages = targetUser
+      ? messages.filter(
+          (msg) =>
+            (msg.from === from && msg.to === targetUser) ||
+            (msg.from === targetUser && msg.to === from),
+        )
+      : [];
+
+    if (filteredMessages.length === 0) {
       const emptyMessage = document.createElement('div');
       emptyMessage.className = 'empty-message';
       emptyMessage.textContent = 'This is the beginning of the dialogue';
@@ -95,14 +111,14 @@ export function initializeChat(
 
     let dividerInserted = false;
 
-    messages.forEach((msg) => {
+    filteredMessages.forEach((msg) => {
       const messageDiv = document.createElement('div');
-      messageDiv.className = `message ${msg.from === currentLogin ? 'sent' : 'received'}`;
+      messageDiv.className = `message ${msg.from === from ? 'sent' : 'received'}`;
 
       if (
         showUnreadDivider &&
         !dividerInserted &&
-        msg.from === selectedUser?.login &&
+        msg.from === targetUser &&
         !msg.status.isReaded
       ) {
         const divider = document.createElement('div');
@@ -126,7 +142,6 @@ export function initializeChat(
       messageDiv.appendChild(timeSpan);
 
       const textSpan = document.createElement('span');
-
       textSpan.textContent = msg.status?.isDeleted
         ? 'Message deleted'
         : msg.text;
@@ -138,7 +153,7 @@ export function initializeChat(
         editedSpan.textContent = ' (Edited)';
         messageDiv.appendChild(editedSpan);
       }
-      if (msg.from === currentLogin && !msg.status?.isDeleted) {
+      if (msg.from === from && !msg.status?.isDeleted) {
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
         deleteBtn.textContent = 'Delete';
@@ -166,7 +181,13 @@ export function initializeChat(
 
         const statusSpan = document.createElement('span');
         statusSpan.className = 'message-status';
-        statusSpan.textContent = msg.status.isDelivered ? '✓✓' : '✓';
+        if (msg.status.isReaded) {
+          statusSpan.textContent = 'Read';
+        } else if (msg.status.isDelivered) {
+          statusSpan.textContent = 'Delivered';
+        } else {
+          statusSpan.textContent = 'Sent';
+        }
         messageDiv.appendChild(statusSpan);
       }
 
@@ -175,32 +196,33 @@ export function initializeChat(
     messageList.scrollTop = messageList.scrollHeight;
   }
 
-  function removeUnreadDivider(): void {
-    if (!showUnreadDivider) return;
-    showUnreadDivider = false;
-    renderMessages();
-  }
-
-  messageList.addEventListener('scroll', removeUnreadDivider);
-  messageList.addEventListener('click', removeUnreadDivider);
-  sendButton.addEventListener('click', removeUnreadDivider);
-
   ws.addEventListener('message', (event) => {
     const data = JSON.parse(event.data);
-
     if (data.type === 'MSG_SEND') {
       const msg = data.payload?.message;
       if (msg) {
         messages.push(msg);
         if (
-          selectedUser &&
-          (msg.from === selectedUser.login || msg.to === selectedUser.login)
+          targetUser &&
+          ((msg.from === from && msg.to === targetUser) ||
+            (msg.from === targetUser && msg.to === from))
         ) {
           renderMessages();
+          markMessagesAsRead();
         }
       }
     } else if (data.type === 'MSG_FROM_USER') {
-      messages = data.payload?.messages || [];
+      const msgs = data.payload?.messages || [];
+      if (targetUser) {
+        messages = msgs.filter(
+          (msg: Message) =>
+            (msg.from === from && msg.to === targetUser) ||
+            (msg.from === targetUser && msg.to === from),
+        );
+      } else {
+        messages = msgs;
+      }
+      showUnreadDivider = true;
       renderMessages();
     } else if (data.type === 'MSG_DELETE') {
       const deletedMsg = data.payload?.message;
@@ -208,7 +230,7 @@ export function initializeChat(
         const index = messages.findIndex((m) => m.id === deletedMsg.id);
         if (index !== -1) {
           messages[index].status.isDeleted = true;
-          renderMessages();
+          if (targetUser) renderMessages();
         }
       }
     } else if (data.type === 'MSG_EDIT') {
@@ -218,27 +240,124 @@ export function initializeChat(
         if (index !== -1) {
           messages[index].text = editedMsg.text;
           messages[index].status.isEdited = true;
-          renderMessages();
+          if (editingMessageId === editedMsg.id) {
+            editingMessageId = null;
+          }
+          if (targetUser) renderMessages();
         }
       }
-    } else if (data.type === 'ERROR') {
-      console.log('Chat error:', data.payload?.error);
+    } else if (data.type === 'MSG_DELIVER') {
+      const deliveredMsg = data.payload?.message;
+      if (deliveredMsg?.id) {
+        const index = messages.findIndex((m) => m.id === deliveredMsg.id);
+        if (index !== -1) {
+          messages[index].status.isDelivered = true;
+          if (
+            targetUser &&
+            ((messages[index].from === from &&
+              messages[index].to === targetUser) ||
+              (messages[index].from === targetUser &&
+                messages[index].to === from))
+          ) {
+            renderMessages();
+          }
+        }
+      }
+    } else if (data.type === 'MSG_READ') {
+      const readMsg = data.payload?.message;
+      if (readMsg?.id) {
+        const index = messages.findIndex((m) => m.id === readMsg.id);
+        if (index !== -1) {
+          messages[index].status.isReaded = true;
+          if (
+            targetUser &&
+            ((messages[index].from === from &&
+              messages[index].to === targetUser) ||
+              (messages[index].from === targetUser &&
+                messages[index].to === from))
+          ) {
+            renderMessages();
+          }
+        }
+      }
     }
   });
 
-  sendButton.addEventListener('click', () => {
-    if (selectedUser && messageInput.value.trim()) {
-      sendMessage(messageInput.value.trim(), selectedUser.login);
-    }
-  });
+  function removeUnreadDivider(): void {
+    if (!showUnreadDivider || !selectedUser || !targetUser) return;
 
-  messageInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && selectedUser && messageInput.value.trim()) {
-      sendMessage(messageInput.value.trim(), selectedUser.login);
-    }
-  });
+    showUnreadDivider = false;
 
-  if (selectedUser) {
+    messages.forEach((msg) => {
+      if (msg.to === from && msg.from === targetUser && !msg.status.isReaded) {
+        ws.send(
+          JSON.stringify({
+            id: crypto.randomUUID(),
+            type: 'MSG_READ',
+            payload: {
+              message: { id: msg.id },
+            },
+          }),
+        );
+      }
+    });
+
+    renderMessages();
+  }
+
+  function markMessagesAsRead(): void {
+    if (!selectedUser || !targetUser) return;
+
+    messages.forEach((msg) => {
+      if (msg.to === from && msg.from === targetUser && !msg.status.isReaded) {
+        const readRequest = {
+          id: crypto.randomUUID(),
+          type: 'MSG_READ',
+          payload: {
+            message: { id: msg.id },
+          },
+        };
+        ws.send(JSON.stringify(readRequest));
+      }
+    });
+  }
+
+  function handleSendButtonClick(): void {
+    if (selectedUser && messageInput.value.trim() && targetUser) {
+      sendMessage(messageInput.value.trim(), targetUser);
+    }
+  }
+
+  function handleMessageInputKeydown(e: KeyboardEvent): void {
+    if (
+      e.key === 'Enter' &&
+      selectedUser &&
+      messageInput.value.trim() &&
+      targetUser
+    ) {
+      sendMessage(messageInput.value.trim(), targetUser);
+    }
+  }
+
+  if (eventListeners.sendButton) {
+    sendButton.removeEventListener('click', eventListeners.sendButton);
+  }
+  if (eventListeners.messageInput) {
+    messageInput.removeEventListener('keydown', eventListeners.messageInput);
+  }
+
+  eventListeners.sendButton = handleSendButtonClick;
+  eventListeners.messageInput = handleMessageInputKeydown;
+
+  if (targetUser) {
+    sendButton.addEventListener('click', handleSendButtonClick);
+    messageInput.addEventListener('keydown', handleMessageInputKeydown);
+    messageList.addEventListener('scroll', removeUnreadDivider);
+    messageList.addEventListener('click', removeUnreadDivider);
+    sendButton.addEventListener('click', removeUnreadDivider);
+  }
+
+  if (selectedUser && targetUser) {
     loadMessageHistory(selectedUser.login);
   }
 }
