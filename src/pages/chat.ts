@@ -1,13 +1,3 @@
-import {
-  document,
-  crypto,
-  WebSocket,
-  KeyboardEvent,
-  HTMLElement,
-  HTMLInputElement,
-  HTMLButtonElement,
-} from '../browserTypes';
-
 interface User {
   login: string;
   online: boolean;
@@ -95,9 +85,7 @@ export function initializeChat(
 
     const filteredMessages = targetUser
       ? messages.filter(
-          (msg) =>
-            (msg.from === from && msg.to === targetUser) ||
-            (msg.from === targetUser && msg.to === from),
+          (msg) => (msg.from === from && msg.to === targetUser) || (msg.from === targetUser && msg.to === from),
         )
       : [];
 
@@ -115,12 +103,7 @@ export function initializeChat(
       const messageDiv = document.createElement('div');
       messageDiv.className = `message ${msg.from === from ? 'sent' : 'received'}`;
 
-      if (
-        showUnreadDivider &&
-        !dividerInserted &&
-        msg.from === targetUser &&
-        !msg.status.isReaded
-      ) {
+      if (showUnreadDivider && !dividerInserted && msg.from === targetUser && !msg.status.isReaded) {
         const divider = document.createElement('div');
         divider.className = 'unread-divider';
         divider.textContent = 'Unread messages';
@@ -142,9 +125,7 @@ export function initializeChat(
       messageDiv.appendChild(timeSpan);
 
       const textSpan = document.createElement('span');
-      textSpan.textContent = msg.status?.isDeleted
-        ? 'Message deleted'
-        : msg.text;
+      textSpan.textContent = msg.status?.isDeleted ? 'Message deleted' : msg.text;
       textSpan.className = 'message-text';
       messageDiv.appendChild(textSpan);
       if (msg.status?.isEdited && !msg.status?.isDeleted) {
@@ -204,8 +185,7 @@ export function initializeChat(
         messages.push(msg);
         if (
           targetUser &&
-          ((msg.from === from && msg.to === targetUser) ||
-            (msg.from === targetUser && msg.to === from))
+          ((msg.from === from && msg.to === targetUser) || (msg.from === targetUser && msg.to === from))
         ) {
           renderMessages();
           markMessagesAsRead();
@@ -216,8 +196,7 @@ export function initializeChat(
       if (targetUser) {
         messages = msgs.filter(
           (msg: Message) =>
-            (msg.from === from && msg.to === targetUser) ||
-            (msg.from === targetUser && msg.to === from),
+            (msg.from === from && msg.to === targetUser) || (msg.from === targetUser && msg.to === from),
         );
       } else {
         messages = msgs;
@@ -254,10 +233,8 @@ export function initializeChat(
           messages[index].status.isDelivered = true;
           if (
             targetUser &&
-            ((messages[index].from === from &&
-              messages[index].to === targetUser) ||
-              (messages[index].from === targetUser &&
-                messages[index].to === from))
+            ((messages[index].from === from && messages[index].to === targetUser) ||
+              (messages[index].from === targetUser && messages[index].to === from))
           ) {
             renderMessages();
           }
@@ -271,10 +248,8 @@ export function initializeChat(
           messages[index].status.isReaded = true;
           if (
             targetUser &&
-            ((messages[index].from === from &&
-              messages[index].to === targetUser) ||
-              (messages[index].from === targetUser &&
-                messages[index].to === from))
+            ((messages[index].from === from && messages[index].to === targetUser) ||
+              (messages[index].from === targetUser && messages[index].to === from))
           ) {
             renderMessages();
           }
@@ -329,12 +304,7 @@ export function initializeChat(
   }
 
   function handleMessageInputKeydown(e: KeyboardEvent): void {
-    if (
-      e.key === 'Enter' &&
-      selectedUser &&
-      messageInput.value.trim() &&
-      targetUser
-    ) {
+    if (e.key === 'Enter' && selectedUser && messageInput.value.trim() && targetUser) {
       sendMessage(messageInput.value.trim(), targetUser);
     }
   }

@@ -1,4 +1,3 @@
-import { WebSocket } from './browserTypes';
 let ws: WebSocket | null = null;
 
 export function getWS(): WebSocket {

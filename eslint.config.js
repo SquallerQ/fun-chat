@@ -3,16 +3,21 @@ import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import typescriptParser from '@typescript-eslint/parser';
 import unicornPlugin from 'eslint-plugin-unicorn';
 import prettier from 'eslint-plugin-prettier'; 
+import globals from 'globals';
 
 export default [
   eslint.configs.recommended,
   {
     files: ['**/*.ts'],
+    ignores: ['**/*.config.ts'],
     languageOptions: {
       parser: typescriptParser,
+      parserOptions: {
+        project: './tsconfig.json',
+      },
       sourceType: 'module',
       globals: {
-        Node: 'readonly',
+        ...globals.browser,
       },
     },
     plugins: {
@@ -25,7 +30,7 @@ export default [
       'unicorn/no-null': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/explicit-function-return-type': ['error'],
-      'prettier/prettier': ['error'],
+      'prettier/prettier': 'error',
     },
   },
   {

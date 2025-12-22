@@ -1,4 +1,3 @@
-import { document, window } from '../browserTypes';
 import { renderApp } from './main';
 import { checkAuth } from './main';
 
@@ -17,8 +16,7 @@ export function renderAboutPage(fromPage: 'auth' | 'main'): void {
   aboutContainer.appendChild(title);
 
   const description = document.createElement('p');
-  description.textContent =
-    'The task was completed as part of the RSSchool JS/FE 2024Q4 course';
+  description.textContent = 'The task was completed as part of the RSSchool JS/FE 2024Q4 course';
   aboutContainer.appendChild(description);
 
   const author = document.createElement('p');

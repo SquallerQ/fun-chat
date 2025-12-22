@@ -1,16 +1,5 @@
-import {
-  document,
-  window,
-  sessionStorage,
-  crypto,
-  setInterval,
-  setTimeout,
-  console,
-} from '../browserTypes';
-
 import githubIcon from '../assets/github.svg';
 import rsSchoolLogo from '../assets/rss-logo.svg';
-
 import { getWS } from '../wsManager';
 
 import { renderAboutPage } from './about';
@@ -205,16 +194,7 @@ export function renderMainPage(): void {
     }
 
     setTimeout(() => {
-      initializeChat(
-        ws,
-        users,
-        selectedUser,
-        messageList,
-        messageInput,
-        sendButton,
-        currentLogin,
-        '',
-      );
+      initializeChat(ws, users, selectedUser, messageList, messageInput, sendButton, currentLogin, '');
 
       const activeRequest = {
         id: crypto.randomUUID(),
@@ -237,12 +217,10 @@ export function renderMainPage(): void {
 
     if (data.type === 'USER_ACTIVE') {
       const activeUsers =
-        data.payload?.users?.map(
-          (user: { login: string; isLogined: boolean }) => ({
-            login: user.login,
-            online: user.isLogined,
-          }),
-        ) || [];
+        data.payload?.users?.map((user: { login: string; isLogined: boolean }) => ({
+          login: user.login,
+          online: user.isLogined,
+        })) || [];
       activeUsers.forEach((activeUser: User) => {
         const existingUser = users.find((u) => u.login === activeUser.login);
         if (existingUser) {
@@ -258,12 +236,10 @@ export function renderMainPage(): void {
       renderUserList(users, searchInput.value);
     } else if (data.type === 'USER_INACTIVE') {
       const inactiveUsers =
-        data.payload?.users?.map(
-          (user: { login: string; isLogined: boolean }) => ({
-            login: user.login,
-            online: user.isLogined,
-          }),
-        ) || [];
+        data.payload?.users?.map((user: { login: string; isLogined: boolean }) => ({
+          login: user.login,
+          online: user.isLogined,
+        })) || [];
 
       inactiveUsers.forEach((inactiveUser: User) => {
         const existingUser = users.find((u) => u.login === inactiveUser.login);
@@ -288,12 +264,7 @@ export function renderMainPage(): void {
       }
     } else if (data.type === 'MSG_READ') {
       const readMsg = data.payload?.message;
-      if (
-        readMsg?.id &&
-        readMsg.from !== currentLogin &&
-        !readMsg.status.isDeleted &&
-        unreadMap[readMsg.from] > 0
-      ) {
+      if (readMsg?.id && readMsg.from !== currentLogin && !readMsg.status.isDeleted && unreadMap[readMsg.from] > 0) {
         unreadMap[readMsg.from]--;
         if (unreadMap[readMsg.from] <= 0) {
           delete unreadMap[readMsg.from];

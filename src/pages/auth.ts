@@ -1,12 +1,3 @@
-import {
-  document,
-  window,
-  sessionStorage,
-  WebSocket,
-  crypto,
-  console,
-} from '../browserTypes';
-
 import { setWS } from '../wsManager';
 import { renderAboutPage } from './about';
 import { renderApp } from './main';
@@ -125,8 +116,7 @@ export function renderAuthPage(): void {
   function updateButtonState(): void {
     const loginValid = !validateLogin(loginInput.value);
     const passwordValid = !validatePassword(passwordInput.value);
-    const hasInput =
-      loginInput.value.length > 0 && passwordInput.value.length > 0;
+    const hasInput = loginInput.value.length > 0 && passwordInput.value.length > 0;
     loginBtn.disabled = !loginValid || !passwordValid || !hasInput;
   }
 
