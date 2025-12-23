@@ -16,11 +16,22 @@ interface Message {
     isDeleted: boolean;
   };
 }
+
+const messagesByChat: Record<string, Message[]> = {};
+let currentChatKey: string | null = null;
+
 const eventListeners: {
   sendButton?: () => void;
   // eslint-disable-next-line no-unused-vars
   messageInput?: (e: KeyboardEvent) => void;
 } = {};
+
+// eslint-disable-next-line no-unused-vars
+let wsMessageHandler: ((event: MessageEvent) => void) | null = null;
+
+function getChatKey(user1: string, user2: string): string {
+  return [user1, user2].sort().join('::');
+}
 
 export function initializeChat(
   ws: WebSocket,
@@ -32,8 +43,15 @@ export function initializeChat(
   from: string,
   to: string,
 ): void {
-  const targetUser = to;
-  let messages: Message[] = [];
+  if (!to || !from) return;
+
+  const chatKey = getChatKey(from, to);
+  currentChatKey = chatKey;
+
+  if (!messagesByChat[chatKey]) {
+    messagesByChat[chatKey] = [];
+  }
+
   let showUnreadDivider = true;
   let editingMessageId: string | null = null;
 
@@ -83,13 +101,9 @@ export function initializeChat(
   function renderMessages(): void {
     messageList.innerHTML = '';
 
-    const filteredMessages = targetUser
-      ? messages.filter(
-          (msg) => (msg.from === from && msg.to === targetUser) || (msg.from === targetUser && msg.to === from),
-        )
-      : [];
+    const messages = messagesByChat[chatKey] || [];
 
-    if (filteredMessages.length === 0) {
+    if (messages.length === 0) {
       const emptyMessage = document.createElement('div');
       emptyMessage.className = 'empty-message';
       emptyMessage.textContent = 'This is the beginning of the dialogue';
@@ -99,11 +113,11 @@ export function initializeChat(
 
     let dividerInserted = false;
 
-    filteredMessages.forEach((msg) => {
+    messages.forEach((msg) => {
       const messageDiv = document.createElement('div');
       messageDiv.className = `message ${msg.from === from ? 'sent' : 'received'}`;
 
-      if (showUnreadDivider && !dividerInserted && msg.from === targetUser && !msg.status.isReaded) {
+      if (showUnreadDivider && !dividerInserted && msg.from === to && !msg.status.isReaded) {
         const divider = document.createElement('div');
         divider.className = 'unread-divider';
         divider.textContent = 'Unread messages';
@@ -128,12 +142,14 @@ export function initializeChat(
       textSpan.textContent = msg.status?.isDeleted ? 'Message deleted' : msg.text;
       textSpan.className = 'message-text';
       messageDiv.appendChild(textSpan);
+
       if (msg.status?.isEdited && !msg.status?.isDeleted) {
         const editedSpan = document.createElement('span');
         editedSpan.className = 'edited-status';
         editedSpan.textContent = ' (Edited)';
         messageDiv.appendChild(editedSpan);
       }
+
       if (msg.from === from && !msg.status?.isDeleted) {
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
@@ -174,97 +190,118 @@ export function initializeChat(
 
       messageList.appendChild(messageDiv);
     });
+
     messageList.scrollTop = messageList.scrollHeight;
   }
 
-  ws.addEventListener('message', (event) => {
+  if (wsMessageHandler) {
+    ws.removeEventListener('message', wsMessageHandler);
+  }
+
+  wsMessageHandler = (event: MessageEvent): void => {
     const data = JSON.parse(event.data);
+
     if (data.type === 'MSG_SEND') {
       const msg = data.payload?.message;
-      if (msg) {
-        messages.push(msg);
-        if (
-          targetUser &&
-          ((msg.from === from && msg.to === targetUser) || (msg.from === targetUser && msg.to === from))
-        ) {
-          renderMessages();
-          markMessagesAsRead();
-        }
+      if (!msg) return;
+
+      const msgChatKey = getChatKey(msg.from, msg.to);
+
+      if (!messagesByChat[msgChatKey]) {
+        messagesByChat[msgChatKey] = [];
+      }
+      messagesByChat[msgChatKey].push(msg);
+
+      if (msgChatKey === currentChatKey) {
+        renderMessages();
+        markMessagesAsRead();
       }
     } else if (data.type === 'MSG_FROM_USER') {
       const msgs = data.payload?.messages || [];
-      if (targetUser) {
-        messages = msgs.filter(
-          (msg: Message) =>
-            (msg.from === from && msg.to === targetUser) || (msg.from === targetUser && msg.to === from),
-        );
-      } else {
-        messages = msgs;
+
+      msgs.forEach((msg: Message) => {
+        const msgChatKey = getChatKey(msg.from, msg.to);
+        if (!messagesByChat[msgChatKey]) {
+          messagesByChat[msgChatKey] = [];
+        }
+        if (!messagesByChat[msgChatKey].find((m) => m.id === msg.id)) {
+          messagesByChat[msgChatKey].push(msg);
+        }
+      });
+
+      if (currentChatKey && messagesByChat[currentChatKey]) {
+        showUnreadDivider = true;
+        renderMessages();
       }
-      showUnreadDivider = true;
-      renderMessages();
     } else if (data.type === 'MSG_DELETE') {
       const deletedMsg = data.payload?.message;
-      if (deletedMsg?.id) {
-        const index = messages.findIndex((m) => m.id === deletedMsg.id);
+      if (!deletedMsg?.id) return;
+
+      Object.keys(messagesByChat).forEach((key) => {
+        const index = messagesByChat[key].findIndex((m) => m.id === deletedMsg.id);
         if (index !== -1) {
-          messages[index].status.isDeleted = true;
-          if (targetUser) renderMessages();
+          messagesByChat[key][index].status.isDeleted = true;
+          if (key === currentChatKey) {
+            renderMessages();
+          }
         }
-      }
+      });
     } else if (data.type === 'MSG_EDIT') {
       const editedMsg = data.payload?.message;
-      if (editedMsg?.id) {
-        const index = messages.findIndex((m) => m.id === editedMsg.id);
+      if (!editedMsg?.id) return;
+
+      Object.keys(messagesByChat).forEach((key) => {
+        const index = messagesByChat[key].findIndex((m) => m.id === editedMsg.id);
         if (index !== -1) {
-          messages[index].text = editedMsg.text;
-          messages[index].status.isEdited = true;
+          messagesByChat[key][index].text = editedMsg.text;
+          messagesByChat[key][index].status.isEdited = true;
           if (editingMessageId === editedMsg.id) {
             editingMessageId = null;
           }
-          if (targetUser) renderMessages();
+          if (key === currentChatKey) {
+            renderMessages();
+          }
         }
-      }
+      });
     } else if (data.type === 'MSG_DELIVER') {
       const deliveredMsg = data.payload?.message;
-      if (deliveredMsg?.id) {
-        const index = messages.findIndex((m) => m.id === deliveredMsg.id);
+      if (!deliveredMsg?.id) return;
+
+      Object.keys(messagesByChat).forEach((key) => {
+        const index = messagesByChat[key].findIndex((m) => m.id === deliveredMsg.id);
         if (index !== -1) {
-          messages[index].status.isDelivered = true;
-          if (
-            targetUser &&
-            ((messages[index].from === from && messages[index].to === targetUser) ||
-              (messages[index].from === targetUser && messages[index].to === from))
-          ) {
+          messagesByChat[key][index].status.isDelivered = true;
+          if (key === currentChatKey) {
             renderMessages();
           }
         }
-      }
+      });
     } else if (data.type === 'MSG_READ') {
       const readMsg = data.payload?.message;
-      if (readMsg?.id) {
-        const index = messages.findIndex((m) => m.id === readMsg.id);
+      if (!readMsg?.id) return;
+
+      Object.keys(messagesByChat).forEach((key) => {
+        const index = messagesByChat[key].findIndex((m) => m.id === readMsg.id);
         if (index !== -1) {
-          messages[index].status.isReaded = true;
-          if (
-            targetUser &&
-            ((messages[index].from === from && messages[index].to === targetUser) ||
-              (messages[index].from === targetUser && messages[index].to === from))
-          ) {
+          messagesByChat[key][index].status.isReaded = true;
+          if (key === currentChatKey) {
             renderMessages();
           }
         }
-      }
+      });
     }
-  });
+  };
+
+  ws.addEventListener('message', wsMessageHandler);
 
   function removeUnreadDivider(): void {
-    if (!showUnreadDivider || !selectedUser || !targetUser) return;
+    if (!showUnreadDivider || !selectedUser || !to) return;
 
     showUnreadDivider = false;
 
+    const messages = messagesByChat[chatKey] || [];
     messages.forEach((msg) => {
-      if (msg.to === from && msg.from === targetUser && !msg.status.isReaded) {
+      if (msg.to === from && msg.from === to && !msg.status.isReaded) {
         ws.send(
           JSON.stringify({
             id: crypto.randomUUID(),
@@ -281,10 +318,11 @@ export function initializeChat(
   }
 
   function markMessagesAsRead(): void {
-    if (!selectedUser || !targetUser) return;
+    if (!selectedUser || !to) return;
 
+    const messages = messagesByChat[chatKey] || [];
     messages.forEach((msg) => {
-      if (msg.to === from && msg.from === targetUser && !msg.status.isReaded) {
+      if (msg.to === from && msg.from === to && !msg.status.isReaded) {
         const readRequest = {
           id: crypto.randomUUID(),
           type: 'MSG_READ',
@@ -298,14 +336,14 @@ export function initializeChat(
   }
 
   function handleSendButtonClick(): void {
-    if (selectedUser && messageInput.value.trim() && targetUser) {
-      sendMessage(messageInput.value.trim(), targetUser);
+    if (selectedUser && messageInput.value.trim() && to) {
+      sendMessage(messageInput.value.trim(), to);
     }
   }
 
   function handleMessageInputKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Enter' && selectedUser && messageInput.value.trim() && targetUser) {
-      sendMessage(messageInput.value.trim(), targetUser);
+    if (e.key === 'Enter' && selectedUser && messageInput.value.trim() && to) {
+      sendMessage(messageInput.value.trim(), to);
     }
   }
 
@@ -319,7 +357,7 @@ export function initializeChat(
   eventListeners.sendButton = handleSendButtonClick;
   eventListeners.messageInput = handleMessageInputKeydown;
 
-  if (targetUser) {
+  if (to) {
     sendButton.addEventListener('click', handleSendButtonClick);
     messageInput.addEventListener('keydown', handleMessageInputKeydown);
     messageList.addEventListener('scroll', removeUnreadDivider);
@@ -327,7 +365,7 @@ export function initializeChat(
     sendButton.addEventListener('click', removeUnreadDivider);
   }
 
-  if (selectedUser && targetUser) {
+  if (selectedUser && to) {
     loadMessageHistory(selectedUser.login);
   }
 }
