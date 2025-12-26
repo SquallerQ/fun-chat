@@ -7,39 +7,46 @@
   padding: 20px;
   text-align: center;
 
-  background-color: #f5f5f5;
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 .about-container {
-  padding: 20px;
-  background-color: #d5e3f1;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  max-width: 700px;
+  padding: 35px 40px;
+
+  background-color: var(--bg-card);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 194, 199, 0.18);
 }
 
 .about-container  h1 {
-  font-size: 36px;
-  margin-bottom: 20px;
+  font-size: 34px;
+  margin-bottom: 22px;
+  color: var(--text-main);
 }
 
 .about-page p {
   font-size: 18px;
-  margin: 10px 0;
-  color: #442c2c;
+  margin: 12px 0;
+  color: #181616;
+  line-height: 1.6;
 }
 
 .back-button {
   margin-top: 20px;
-  padding: 10px 20px;
-  color: #fff;
-  background-color: #007bff;
+  padding: 12px 28px;
+
+  font-size: 16px;
   border: none;
   border-radius: 4px;
-  cursor: pointer;
+  color: #fff;
 
-  transition: all .3s ease;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  transition: all 0.3s ease;
 }
 
 .back-button:hover {
-  background-color: #0056b3;
+  box-shadow: 0 8px 10px rgba(0, 194, 199, 0.35);
 }
