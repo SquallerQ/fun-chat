@@ -10,13 +10,19 @@
   margin-left: auto;
   text-align: right;
   color: #fff;
-  background-color: #007bff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: 0 4px 10px rgba(0, 194, 199, 0.3);
 }
 
 .message.received {
   margin-right: auto;
   text-align: left;
-  background-color: #a6aeb7;
+  color: var(--text-main);
+  background-color: var(--primary-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.message.received .message-time {
+  color: var(--text-main);
 }
 
 .message-time {
@@ -41,12 +47,17 @@
 
 .message-status {
   font-size: 12px;
+  color: #000;
 }
 
 .edited-status {
   margin-right: 5px;
   font-size: 12px;
-  color: #212518;
+  color: #fff;
+}
+
+.message.received .edited-status {
+  color: #000;
 }
 
 .delete-btn {
@@ -60,23 +71,33 @@
 
   transition: all 0.3s ease;
 }
+
+.delete-btn:hover {
+  background-color: #e03e45;
+}
+
 .edit-btn {
   margin-right: 5px;
   padding: 3px 8px;
-  background-color: #a3a7a3;
-  color: #fff;
   border: none;
   border-radius: 4px;
   font-size: 14px;
+  color: var(--text-main);
+  background-color: var(--primary-light);
 
   transition: all 0.3s ease;
 }
 
+.edit-btn:hover {
+  background-color: var(--primary);
+  color: #fff;
+}
+
 .unread-divider {
   text-align: center;
-  margin: 10px 0;
+  padding: 6px 0;
   font-size: 12px;
-  color: #666;
+  color: var(--text-muted);
   border-top: 1px solid #ccc;
   border-bottom: 1px solid #ccc;
   padding-top: 5px;
@@ -88,9 +109,9 @@
   height: 20px;
   line-height: 20px;
   text-align: center;
-  background-color: #ff4d4f;
+  background-color: #ffa9aa;
   color: #fff;
   border-radius: 50%;
   font-size: 12px;
-  margin-left: 10px;
+  margin-right: 10px;
 }
