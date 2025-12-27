@@ -34,6 +34,21 @@
   line-height: 1.6;
 }
 
+.about-school {
+  color: #879901;
+}
+
+.about-author {
+  color: var(--primary-dark);
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.about-author:hover {
+  text-decoration: underline;
+  color: var(--primary-dark);
+}
+
 .back-button {
   margin-top: 20px;
   padding: 12px 28px;

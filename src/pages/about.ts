@@ -16,11 +16,25 @@ export function renderAboutPage(fromPage: 'auth' | 'main'): void {
   aboutContainer.appendChild(title);
 
   const description = document.createElement('p');
-  description.textContent = 'The task was completed as part of the RSSchool JS/FE 2024Q4 course';
+  description.textContent = 'The task was completed as part of the ';
+
+  const rssSchoolSpan = document.createElement('span');
+  rssSchoolSpan.textContent = 'RSSchool JS/FE 2024Q4';
+  rssSchoolSpan.className = 'about-school';
+
+  description.appendChild(rssSchoolSpan);
   aboutContainer.appendChild(description);
 
   const author = document.createElement('p');
-  author.textContent = 'Completed by Squaller';
+  author.textContent = 'Completed by ';
+
+  const githubLink = document.createElement('a');
+  githubLink.href = 'https://github.com/squallerq';
+  githubLink.target = '_blank';
+  githubLink.className = 'about-author';
+  githubLink.textContent = 'Squaller';
+
+  author.appendChild(githubLink);
   aboutContainer.appendChild(author);
 
   const backButton = document.createElement('button');

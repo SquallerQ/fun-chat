@@ -39,18 +39,37 @@ export function renderMainPage(): void {
   const header = document.createElement('header');
   header.className = 'header';
 
+  const appTitle = document.createElement('div');
+  appTitle.className = 'header-title';
+
+  const logo = document.createElement('img');
+  logo.src = '/public/favicon.svg';
+  logo.alt = 'Fun Chat logo';
+  logo.className = 'header-logo';
+
   const appName = document.createElement('h1');
   appName.textContent = 'Fun Chat';
-  header.appendChild(appName);
+
+  appTitle.appendChild(logo);
+  appTitle.appendChild(appName);
+  header.appendChild(appTitle);
 
   const userName = document.createElement('span');
+  userName.className = 'header-user-name';
+
+  const welcomeText = document.createTextNode('Welcome, ');
+  userName.appendChild(welcomeText);
+
   const login = sessionStorage.getItem('login');
   if (login) {
-    userName.textContent = `Welcome, ${login}!`;
+    const loginSpan = document.createElement('span');
+    loginSpan.className = 'user-login';
+    loginSpan.textContent = login;
+    userName.appendChild(loginSpan);
+    userName.appendChild(document.createTextNode('!'));
   } else {
-    userName.textContent = 'Welcome, User!';
+    userName.appendChild(document.createTextNode('User!'));
   }
-  userName.className = 'header-user-name';
   header.appendChild(userName);
 
   const infoBtn = document.createElement('button');
@@ -146,23 +165,25 @@ export function renderMainPage(): void {
   const githubLink = document.createElement('a');
   githubLink.href = 'https://github.com/squallerq';
   githubLink.target = '_blank';
-  githubContainer.appendChild(githubLink);
+  githubLink.className = 'github-link';
 
   const githubIconImg = document.createElement('img');
   githubIconImg.src = githubIcon;
   githubIconImg.alt = 'GitHub';
   githubIconImg.className = 'github-icon';
-  githubLink.appendChild(githubIconImg);
 
   const authorName = document.createElement('span');
   authorName.textContent = 'Squaller';
   authorName.className = 'author-name';
-  githubContainer.appendChild(authorName);
+
+  githubLink.appendChild(githubIconImg);
+  githubLink.appendChild(authorName);
+  githubContainer.appendChild(githubLink);
 
   footer.appendChild(githubContainer);
 
   const year = document.createElement('span');
-  year.textContent = '2025';
+  year.textContent = '2025 Year';
   year.className = 'year';
   footer.appendChild(year);
 
